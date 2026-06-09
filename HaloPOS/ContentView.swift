@@ -8,14 +8,42 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @StateObject private var vm = POSViewModel(service: ProductService())
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        VStack(spacing: 8) {
+            ProductGridView(product: vm.product) { product in
+                vm.addToCart(product)
+            }
+            
+            CartView(cart: vm.cart) { cart in
+                vm.increaseQuantity(for: cart)
+            } onDecrease: { cart in
+                vm.decreaseQuantity(for: cart)
+            } onDelete: { cart in
+                vm.deleteItem(cart)
+            }
+            
+            VStack {
+                Text("Total: Rp \(Int(vm.totalPrice))")
+                    .font(.title2)
+                    .bold()
+                    .padding()
+                
+                if !vm.cart.isEmpty {
+                    SwipeToPayButton(totalPrice: Int(vm.totalPrice)) {
+                        vm.checkout()
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+            }
         }
-        .padding()
+        .fullScreenCover(item: $vm.currentTransaction) { transaction in
+            TransactionDetailView(transaction: transaction) {
+                vm.clearCart()
+            }
+        }
     }
 }
 
